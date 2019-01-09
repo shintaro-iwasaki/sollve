@@ -9,33 +9,33 @@ This repository contains all projects supported by the SOLLVE project. It is aut
    * compiler-rt
    * libcxx
    * libcxxabi
-   * openmp (merged into `llvm/projects/bolt`)
+   * openmp
   * `sollve_vv`: OpenMP 4.5 offloading verification suite (https://bitbucket.org/crpl_cisc/sollve_vv)
-  * `llvm/projects/bolt`: BOLT (http://www.bolt-omp.org/)
-  * `llvm/projects/bolt/external/argobots`: Argobots (http://www.argobots.org)
+  * `llvm/projects/openmp`: BOLT (http://www.bolt-omp.org/)
+  * `llvm/projects/openmp/external/argobots`: Argobots (http://www.argobots.org)
 
-## Instructions
+## Installation
 
 ### Prerequisites
 
 ```
-- REQUIRED: C compiler (gcc (>= 4.8) is sufficient)
+- REQUIRED: C/C++ compilers (gcc/g++ are sufficient)
 - REQUIRED: CMake
-- OPTIONAL: CUDA environment (for offloading)
-- OPTIONAL: libelf (for offloading, see https://directory.fsf.org/wiki/Libelf)
-- OPTIONAL: individually installed Argobots
+- OPTIONAL: CUDA environment (to test the offloading features for NVIDIA GPUs)
+- OPTIONAL: libelf (for offloading, see https://directory.fsf.org/wiki/Libelf, installed in `<LIBELF_INSTALL_DIR>`)
+- OPTIONAL: your own Argobots, installed in `<ARGOBOTS_INSTALL_DIR>`
 - OPTIONAL: python (for testing)
 ```
 
 ### Install SOLLVE LLVM
 
-The following instructions assume that the tar is unpacked and the cursor is at the top level directory.
+First, go to the top level directory. You can find three files as follows:
 ```
 sollve$ ls
 llvm     sollve_vv    README.md
 ```
 
-To install the SOLLVE LLVM to `<LLVM_INSTALL_DIR>`, run the following command:
+To build and install the SOLLVE LLVM to `<LLVM_INSTALL_DIR>`, run the following commands:
 ```
 cd llvm
 mkdir build
@@ -44,33 +44,36 @@ cmake ../ -DCMAKE_INSTALL_PREFIX=<LLVM_INSTALL_DIR> -DLIBOMP_USE_ARGOBOTS=on [ot
 make -j install
 ```
 
-Useful configuration options are listed:
+Useful CMake configuration options are as follows:
 ```
 # specify the build option.
 -DCMAKE_BUILD_TYPE=<DEBUG|Release|RelWithDebInfo|MinSizeRel>
 # use your own Argobots
 -DLIBOMP_ARGOBOTS_INSTALL_DIR=<ARGOBOTS_INSTALL_DIR>
-# enable offloading with CUDA (if LIBELF is not installed to the system)
+# enable offloading with CUDA (if libelf is not installed in your system)
 -DLIBOMPTARGET_DEP_LIBELF_INCLUDE_DIRS=<LIBELF_INSTALL_DIR>
 ```
 
-If `-DLIBOMP_USE_ARGOBOTS=on` is not set (e.g., `-DLIBOMP_USE_ARGOBOTS=off`), Pthreads-based OpenMP runtime system is used.
+If `-DLIBOMP_USE_ARGOBOTS=on` is not set (e.g., `-DLIBOMP_USE_ARGOBOTS=off`), the Pthreads-based OpenMP runtime system is installed.
 
-### Run a testsuite for CPUs.
+## Running Tests
 
-It is assumed that all the necessary paths (including `PATH`, `CPATH`, `LIBRARY_PATH`, and `LD_LIBRARY_PATH`) to `<LLVM_INSTALL_DIR>` are properly set.
-To run the OpenMP testsuite for CPU, go to the build directory (e.g., `sollve/llvm/build`) and type the following commands:
+### Run the LLVM OpenMP testsuite (mainly for CPUs)
+
+It is assumed that SOLLVE LLVM is properly installed to your system (i.e., all the environmental variables, including `PATH`, `CPATH`, `LIBRARY_PATH`, and `LD_LIBRARY_PATH`, are properly set to `<LLVM_INSTALL_DIR>/bin` etc).
+To run the LLVM OpenMP testsuite, go to the build directory (e.g., `sollve/llvm/build`) and type as follows:
 ```
-build $ ls
+build$ ls
 benchmarks  bin   cmake   CMakeCache.txt ...
-build $ python bin/llvm-lit -j<N> projects/bolt/runtime/test
+build$ python bin/llvm-lit -j<N> projects/bolt/runtime/test
 ```
 where `N` is the number of threads to run tests in parallel.
+All tests are expected to be passed (not failed.)
 
-### Run a testsuite for accelerators (sollve_vv)
+### Run the SOLLVE OpenMP 4.5 V&V testsuite (primarily for the offloading features)
 
-It is assumed that all the necessary paths (including `PATH`, `CPATH`, `LIBRARY_PATH`, and `LD_LIBRARY_PATH`) to `<LLVM_INSTALL_DIR>` and `<LIBELF_INSTALL_DIR>` are properly set.
-sollve_vv can be run as follows:
+It is assumed that all the necessary paths (e.g., `PATH`, `CPATH`, `LIBRARY_PATH`, and `LD_LIBRARY_PATH`) to `<LLVM_INSTALL_DIR>` and `<LIBELF_INSTALL_DIR>` are properly set.
+The SOLLVE OpenMP 4.5 V&V testsuite can be run as follows:
 ```
 sollve$ ls
 llvm     sollve_vv    README.md
@@ -80,13 +83,14 @@ sollve$ make CC=clang CXX=clang++ SYSTEM=<SYSTEM_NAME> LOG=1 SOURCES=tests/*/*.c
 sollve$ make CC=clang CXX=clang++ SYSTEM=<SYSTEM_NAME> SOURCES=tests/*/*.c* report_json
 sollve$ make CC=clang CXX=clang++ SYSTEM=<SYSTEM_NAME> SOURCES=tests/*/*.c* report_html
 ```
+Note that the current SOLLVE LLVM might not pass all of the tests.
 
 By default, the following systems are support as `<SYSTEM_NAME>`:
  * summit
  * summitdev
  * titan
 
-You can add your own configuration. The following is an example to test the offloading features with CUDA:
+You can add your own configuration. The following is an example to test the offloading features with CUDA 9.1.85:
 ```
 # Definitions for the local system
 
@@ -110,5 +114,5 @@ ifeq ($(CXX), clang++)
   CXX_VERSION = clang++ -dumpversion
 endif
 ```
-A new `<SYSTEM_NAME>` is added (say `local`) by creating the file above (`local.def`) in `sollve/sollve_vv/sys/systems`.
+You can add a new `<SYSTEM_NAME>` (say `local`) by creating the file (`local.def`) in `sollve/sollve_vv/sys/systems`.
 
